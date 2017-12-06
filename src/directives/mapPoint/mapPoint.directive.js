@@ -1,10 +1,12 @@
-angular.module('ap-maps').directive('apMap', [
-    'mapService',
-    function(mapService) {
+angular.module('ap-maps').directive('apMapPoint', [
+    'mapService','$rootScope',
+    function(mapService,$rootScope) {
         return {
-            require: 'ngModel',
             restrict: 'AE',
-            link: function(scope, elem, attr, ngModel) {
+            scope: {
+                name: '@'
+            },
+            link: function(scope, elem, attr) {
                 //elemento del DOM en donde se va a poner el mapa
                 var elemMap = elem.find('.map');
                 
@@ -46,20 +48,18 @@ angular.module('ap-maps').directive('apMap', [
                     if(map === null) return;
                     var latLng = e.latlng;
                     
-                    //agregamos la posicion actual al modelo
-                    ngModel.$setViewValue(latLng);
+                    //ponemos el marcador en el mapa
+                    setMarker(latLng.lat, latLng.lng);
+                    
+                    //emitimos el evento
+                    $rootScope.$broadcast('ap-map:pointpicker', scope.name, latLng);
                 }
                 
-                
-                scope.$watch(function () {
-                    return ngModel.$modelValue;
-                }, function (val) {
-                    if (val) {
-                        console.log('val',val);
-                        
-                        setMarker(val.lat, val.lng);
-                    }
+                scope.$on('apMap:showOnMap', function(event, name, lat, lng) {
+                    if(scope.name !== name || lat === null || lng === null) return;
+                    setMarker(lat, lng);
                 });
+                
                 
                 //destruimos los eventos
                 var destroyEvent = scope.$on('$destroy', function() {
@@ -70,7 +70,7 @@ angular.module('ap-maps').directive('apMap', [
                     destroyEvent();
                 });
             },
-            templateUrl: 'directives/mapa/map.template.html'
+            templateUrl: 'directives/mapPoint/mapPoint.template.html'
         };
     }
 ]);
