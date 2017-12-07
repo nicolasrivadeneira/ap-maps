@@ -1,4 +1,4 @@
-angular.module('ap-maps').directive('pointPicker', [
+angular.module('ap-maps').directive('polygonPicker', [
     'mapService','$rootScope',
     function(mapService,$rootScope) {
         return {
@@ -8,39 +8,36 @@ angular.module('ap-maps').directive('pointPicker', [
                 name: '@'
             },
             link: function(scope, elem, attr, ngModel) {
-                scope.model = {
-                    latitud: null,
-                    longitud: null
-                };
+                var polygon = null;
                 
-                var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, latLng) {
+                var destroyEventMapPicker = scope.$on('ap-map:mappicker',function(event, name, latLngs) {
                     if(scope.name !== name) return;
-                    ngModel.$setViewValue(latLng);
+                    ngModel.$setViewValue(latLngs);
                 });
                 
                 scope.clickBtn = function() {
                     if(attr.view) {
                         $rootScope.$broadcast('apBox:show', attr.view);
                     }
-                    $rootScope.$broadcast('apMap:showOnMap', scope.name, scope.model.latitud, scope.model.longitud);
+                    $rootScope.$broadcast('apMap:showOnMapPolygon', scope.name, polygon);
                 };
                 
                 scope.$watch(function () {
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        scope.model.latitud = val.lat;
-                        scope.model.longitud = val.lng;
+                        console.log(val);
+                        polygon = val;
                     }
                 });
                 
                 //destruimos los eventos
                 var destroyEvent = scope.$on('$destroy', function() {
-                    destroyEventPointPicker();
+                    destroyEventMapPicker();
                     destroyEvent();
                 });
             },
-            templateUrl: 'directives/pointPicker/pointPicker.template.html'
+            templateUrl: 'directives/polygonPicker/polygonPicker.template.html'
         };
     }
 ]);

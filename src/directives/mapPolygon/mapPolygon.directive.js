@@ -4,7 +4,8 @@ angular.module('ap-maps').directive('apMapPolygon', [
         return {
             restrict: 'AE',
             scope: {
-                name: '@'
+                name: '@',
+                type: '@?'
             },
             link: function(scope, elem, attr) {
                 //elemento del DOM en donde se va a poner el mapa
@@ -54,8 +55,7 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     }
                     
                     
-//                    //emitimos el evento
-//                    $rootScope.$broadcast('ap-map:pointpicker', scope.name, latLng);
+
                 }
                 
                 
@@ -102,7 +102,11 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     }
                 }
                 
-                scope.closePolygon = function() {
+                /**
+                 * Se tiene en cuenta el type de la directiva para ver si se envia un poligono o una polilinea.
+                 * Si es un poligono, cuando se apreta el boton terminar se cierra el poligono
+                 */
+                scope.finish = function() {
                     if(polyline === null) return;
                     
                     //obtenemos el arreglo de longitudes y latitudes
@@ -111,26 +115,45 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     //borramos todo
                     clearMap();
                     
-                    //creamos el polygon
-                    polygon = L.polygon(latLngs, {color: 'red'}).addTo(map);
+                    //creamos el poligono si el type es polygon, sino creamos una polilinea.
+                    if(scope.type === "polygon") {
+                        polygon = L.polygon(latLngs, {color: 'red'}).addTo(map);
+                    } else {
+                        polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
+                    }
+                    
+                    console.log(latLngs);
+                    
+                    //emitimos el evento
+                    $rootScope.$broadcast('ap-map:mappicker', scope.name, latLngs);
                 };
                 
                 scope.clear = clearMap;
                 
-//                scope.$on('apMap:showOnMap', function(event, name, lat, lng) {
-//                    if(scope.name !== name || lat === null || lng === null) return;
-//                    setMarker(lat, lng);
-//                });
+                var destroyshowOnMapPolygon = scope.$on('apMap:showOnMapPolygon', function(event, name, latLngs) {
+                    if(scope.name !== name || latLngs === null) return;
+                    
+                    //borramos todo
+                    clearMap();
+                    
+                    //creamos el poligono si el type es polygon, sino creamos una polilinea.
+                    if(scope.type === "polygon") {
+                        polygon = L.polygon(latLngs, {color: 'red'}).addTo(map);
+                    } else {
+                        polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
+                    }
+                });
                 
                 
-//                //destruimos los eventos
-//                var destroyEvent = scope.$on('$destroy', function() {
-//                    if(map !== null) {
-//                        map.off('click', onCLickMap);
-//                    }
-//                    
-//                    destroyEvent();
-//                });
+                //destruimos los eventos
+                var destroyEvent = scope.$on('$destroy', function() {
+                    if(map !== null) {
+                        map.off('click', onCLickMap);
+                    }
+                    
+                    destroyshowOnMapPolygon();
+                    destroyEvent();
+                });
             },
             templateUrl: 'directives/mapPolygon/mapPolygon.template.html'
         };

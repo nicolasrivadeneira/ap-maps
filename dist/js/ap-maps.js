@@ -83,7 +83,8 @@ angular.module('ap-maps', [
         return {
             restrict: 'AE',
             scope: {
-                name: '@'
+                name: '@',
+                type: '@?'
             },
             link: function(scope, elem, attr) {
                 //elemento del DOM en donde se va a poner el mapa
@@ -133,8 +134,7 @@ angular.module('ap-maps', [
                     }
                     
                     
-//                    //emitimos el evento
-//                    $rootScope.$broadcast('ap-map:pointpicker', scope.name, latLng);
+
                 }
                 
                 
@@ -181,7 +181,11 @@ angular.module('ap-maps', [
                     }
                 }
                 
-                scope.closePolygon = function() {
+                /**
+                 * Se tiene en cuenta el type de la directiva para ver si se envia un poligono o una polilinea.
+                 * Si es un poligono, cuando se apreta el boton terminar se cierra el poligono
+                 */
+                scope.finish = function() {
                     if(polyline === null) return;
                     
                     //obtenemos el arreglo de longitudes y latitudes
@@ -190,26 +194,45 @@ angular.module('ap-maps', [
                     //borramos todo
                     clearMap();
                     
-                    //creamos el polygon
-                    polygon = L.polygon(latLngs, {color: 'red'}).addTo(map);
+                    //creamos el poligono si el type es polygon, sino creamos una polilinea.
+                    if(scope.type === "polygon") {
+                        polygon = L.polygon(latLngs, {color: 'red'}).addTo(map);
+                    } else {
+                        polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
+                    }
+                    
+                    console.log(latLngs);
+                    
+                    //emitimos el evento
+                    $rootScope.$broadcast('ap-map:mappicker', scope.name, latLngs);
                 };
                 
                 scope.clear = clearMap;
                 
-//                scope.$on('apMap:showOnMap', function(event, name, lat, lng) {
-//                    if(scope.name !== name || lat === null || lng === null) return;
-//                    setMarker(lat, lng);
-//                });
+                var destroyshowOnMapPolygon = scope.$on('apMap:showOnMapPolygon', function(event, name, latLngs) {
+                    if(scope.name !== name || latLngs === null) return;
+                    
+                    //borramos todo
+                    clearMap();
+                    
+                    //creamos el poligono si el type es polygon, sino creamos una polilinea.
+                    if(scope.type === "polygon") {
+                        polygon = L.polygon(latLngs, {color: 'red'}).addTo(map);
+                    } else {
+                        polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
+                    }
+                });
                 
                 
-//                //destruimos los eventos
-//                var destroyEvent = scope.$on('$destroy', function() {
-//                    if(map !== null) {
-//                        map.off('click', onCLickMap);
-//                    }
-//                    
-//                    destroyEvent();
-//                });
+                //destruimos los eventos
+                var destroyEvent = scope.$on('$destroy', function() {
+                    if(map !== null) {
+                        map.off('click', onCLickMap);
+                    }
+                    
+                    destroyshowOnMapPolygon();
+                    destroyEvent();
+                });
             },
             templateUrl: 'directives/mapPolygon/mapPolygon.template.html'
         };
@@ -236,7 +259,9 @@ angular.module('ap-maps', [
                 });
                 
                 scope.clickBtn = function() {
-                    $rootScope.$broadcast('apBox:show', attr.map);
+                    if(attr.view) {
+                        $rootScope.$broadcast('apBox:show', attr.view);
+                    }
                     $rootScope.$broadcast('apMap:showOnMap', scope.name, scope.model.latitud, scope.model.longitud);
                 };
                 
@@ -256,6 +281,49 @@ angular.module('ap-maps', [
                 });
             },
             templateUrl: 'directives/pointPicker/pointPicker.template.html'
+        };
+    }
+]);
+;angular.module('ap-maps').directive('polygonPicker', [
+    'mapService','$rootScope',
+    function(mapService,$rootScope) {
+        return {
+            require: 'ngModel',
+            restrict: 'AE',
+            scope: {
+                name: '@'
+            },
+            link: function(scope, elem, attr, ngModel) {
+                var polygon = null;
+                
+                var destroyEventMapPicker = scope.$on('ap-map:mappicker',function(event, name, latLngs) {
+                    if(scope.name !== name) return;
+                    ngModel.$setViewValue(latLngs);
+                });
+                
+                scope.clickBtn = function() {
+                    if(attr.view) {
+                        $rootScope.$broadcast('apBox:show', attr.view);
+                    }
+                    $rootScope.$broadcast('apMap:showOnMapPolygon', scope.name, polygon);
+                };
+                
+                scope.$watch(function () {
+                    return ngModel.$modelValue;
+                }, function (val) {
+                    if (val) {
+                        console.log(val);
+                        polygon = val;
+                    }
+                });
+                
+                //destruimos los eventos
+                var destroyEvent = scope.$on('$destroy', function() {
+                    destroyEventMapPicker();
+                    destroyEvent();
+                });
+            },
+            templateUrl: 'directives/polygonPicker/polygonPicker.template.html'
         };
     }
 ]);
@@ -319,7 +387,9 @@ angular.module('ap-maps', [
   $templateCache.put("directives/mapPoint/mapPoint.template.html",
     "<div class=map ng-style=\"{'height':height}\"></div>");
   $templateCache.put("directives/mapPolygon/mapPolygon.template.html",
-    "<div class=map ng-style=\"{'height':height}\"></div><button type=button class=button ng-click=clear()>Limpiar</button><button type=button class=button ng-click=closePolygon()>Cerrar Poligono</button>");
+    "<div class=map ng-style=\"{'height':height}\"></div><button type=button class=button ng-click=clear()>Limpiar</button><button type=button class=button ng-click=finish()>Terminar</button>");
   $templateCache.put("directives/pointPicker/pointPicker.template.html",
-    "<div class=row><div class=\"columns small-12 large-6\"><label>Latitud <input type=text ng-value=model.latitud readonly></label></div><div class=\"columns small-12 large-6\"><label>Longitud <input type=text ng-value=model.longitud readonly></label></div><div class=\"columns small-12 large-6\"><button type=button class=button ng-click=clickBtn()>Ver en Mapa</button></div></div>");
+    "<div class=row><div class=\"columns small-12 large-6\"><label>Latitud <input type=text ng-value=model.latitud readonly></label></div><div class=\"columns small-12 large-6\"><label>Longitud <input type=text ng-value=model.longitud readonly></label></div><div class=\"columns small-12 large-6\"><button type=button class=button ng-click=clickBtn()>Ver Punto en Mapa</button></div></div>");
+  $templateCache.put("directives/polygonPicker/polygonPicker.template.html",
+    "<div class=row><div class=\"columns small-12 large-6\"><button type=button class=button ng-click=clickBtn()>Ver poligono en Mapa</button></div></div>");
 }]);
