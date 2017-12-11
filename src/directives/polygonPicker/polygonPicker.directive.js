@@ -34,7 +34,6 @@ angular.module('ap-maps').directive('polygonPicker', [
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        console.log(val);
                         polygon = val;
                     }
                 });
