@@ -53,9 +53,6 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     } else {
                         polyline.addLatLng(latLng);
                     }
-                    
-                    
-
                 }
                 
                 

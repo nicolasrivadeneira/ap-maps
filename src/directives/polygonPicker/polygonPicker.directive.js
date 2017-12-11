@@ -12,7 +12,15 @@ angular.module('ap-maps').directive('polygonPicker', [
                 
                 var destroyEventMapPicker = scope.$on('ap-map:mappicker',function(event, name, latLngs) {
                     if(scope.name !== name) return;
-                    ngModel.$setViewValue(latLngs);
+                    
+                    var points = [];
+                    for(var i = 0; i < latLngs.length; i++) {
+                        points.push({
+                            latitud: latLngs[i].lat,
+                            longitud: latLngs[i].lng
+                        });
+                    }
+                    ngModel.$setViewValue(points);
                 });
                 
                 scope.clickBtn = function() {

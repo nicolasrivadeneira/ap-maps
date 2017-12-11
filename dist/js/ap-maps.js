@@ -132,9 +132,6 @@ angular.module('ap-maps', [
                     } else {
                         polyline.addLatLng(latLng);
                     }
-                    
-                    
-
                 }
                 
                 
@@ -255,7 +252,12 @@ angular.module('ap-maps', [
                 
                 var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, latLng) {
                     if(scope.name !== name) return;
-                    ngModel.$setViewValue(latLng);
+                    
+                    var obj = {
+                        latitud: latLng.lat,
+                        longitud: latLng.lng
+                    };
+                    ngModel.$setViewValue(obj);
                 });
                 
                 scope.clickBtn = function() {
@@ -298,7 +300,15 @@ angular.module('ap-maps', [
                 
                 var destroyEventMapPicker = scope.$on('ap-map:mappicker',function(event, name, latLngs) {
                     if(scope.name !== name) return;
-                    ngModel.$setViewValue(latLngs);
+                    
+                    var points = [];
+                    for(var i = 0; i < latLngs.length; i++) {
+                        points.push({
+                            latitud: latLngs[i].lat,
+                            longitud: latLngs[i].lng
+                        });
+                    }
+                    ngModel.$setViewValue(points);
                 });
                 
                 scope.clickBtn = function() {
@@ -391,5 +401,5 @@ angular.module('ap-maps', [
   $templateCache.put("directives/pointPicker/pointPicker.template.html",
     "<div class=row><div class=\"columns small-12 large-6\"><label>Latitud <input type=text ng-value=model.latitud readonly></label></div><div class=\"columns small-12 large-6\"><label>Longitud <input type=text ng-value=model.longitud readonly></label></div><div class=\"columns small-12 large-6\"><button type=button class=button ng-click=clickBtn()>Ver Punto en Mapa</button></div></div>");
   $templateCache.put("directives/polygonPicker/polygonPicker.template.html",
-    "<div class=row><div class=\"columns small-12 large-6\"><button type=button class=button ng-click=clickBtn()>Ver poligono en Mapa</button></div></div>");
+    "<div class=row><div class=\"columns small-12 large-6\"><button type=button class=button ng-click=clickBtn()>Ver en Mapa</button></div></div>");
 }]);

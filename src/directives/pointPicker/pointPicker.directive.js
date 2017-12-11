@@ -15,7 +15,12 @@ angular.module('ap-maps').directive('pointPicker', [
                 
                 var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, latLng) {
                     if(scope.name !== name) return;
-                    ngModel.$setViewValue(latLng);
+                    
+                    var obj = {
+                        latitud: latLng.lat,
+                        longitud: latLng.lng
+                    };
+                    ngModel.$setViewValue(obj);
                 });
                 
                 scope.clickBtn = function() {
