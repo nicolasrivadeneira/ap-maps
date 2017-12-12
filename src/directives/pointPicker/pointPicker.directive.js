@@ -1,6 +1,6 @@
 angular.module('ap-maps').directive('pointPicker', [
-    'mapService','$rootScope',
-    function(mapService,$rootScope) {
+    'pointNormalizer','$rootScope',
+    function(pointNormalizer,$rootScope) {
         return {
             require: 'ngModel',
             restrict: 'AE',
@@ -16,10 +16,7 @@ angular.module('ap-maps').directive('pointPicker', [
                 var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, latLng) {
                     if(scope.name !== name) return;
                     
-                    var obj = {
-                        latitud: latLng.lat,
-                        longitud: latLng.lng
-                    };
+                    var obj = pointNormalizer.denormalize(latLng);
                     ngModel.$setViewValue(obj);
                 });
                 
@@ -34,8 +31,11 @@ angular.module('ap-maps').directive('pointPicker', [
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        scope.model.latitud = val.lat;
-                        scope.model.longitud = val.lng;
+                        
+                        var latLng = pointNormalizer.normalize(val);
+                        
+                        scope.model.latitud = latLng.lat;
+                        scope.model.longitud = latLng.lng;
                     }
                 });
                 

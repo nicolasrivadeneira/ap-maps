@@ -236,8 +236,8 @@ angular.module('ap-maps', [
     }
 ]);
 ;angular.module('ap-maps').directive('pointPicker', [
-    'mapService','$rootScope',
-    function(mapService,$rootScope) {
+    'pointNormalizer','$rootScope',
+    function(pointNormalizer,$rootScope) {
         return {
             require: 'ngModel',
             restrict: 'AE',
@@ -253,10 +253,7 @@ angular.module('ap-maps', [
                 var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, latLng) {
                     if(scope.name !== name) return;
                     
-                    var obj = {
-                        latitud: latLng.lat,
-                        longitud: latLng.lng
-                    };
+                    var obj = pointNormalizer.denormalize(latLng);
                     ngModel.$setViewValue(obj);
                 });
                 
@@ -271,8 +268,11 @@ angular.module('ap-maps', [
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        scope.model.latitud = val.lat;
-                        scope.model.longitud = val.lng;
+                        
+                        var latLng = pointNormalizer.normalize(val);
+                        
+                        scope.model.latitud = latLng.lat;
+                        scope.model.longitud = latLng.lng;
                     }
                 });
                 
@@ -322,7 +322,6 @@ angular.module('ap-maps', [
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        console.log(val);
                         polygon = val;
                     }
                 });
@@ -391,6 +390,82 @@ angular.module('ap-maps', [
                     return map;
                 });
             }
+        };
+    }
+]);;/**
+ * Convierte el objeto LineString a un arreglo de latLangs de leaflet. 
+ * 
+ * En leaflet el objeto polyline es lo mismo que el objeto LineString en creof doctrine de symfony
+ */
+angular.module('ap-maps').service('linestringNormalizer', [
+    'pointNormalizer',
+    function(pointNormalizer) {
+        this.normalize = function(lineString) {
+            var latLngs = [];
+            
+            //tratamiento de los puntos
+            for(var i = 0; i < lineString.points.length; i++) {
+                var point = lineString.points[i];
+                latLngs.push(pointNormalizer.normalize(point));
+            }
+            
+            return {
+                latLngs: latLngs,
+                closed: lineString.closed
+            };
+        };
+        
+        
+        this.denormalize = function(latLngs) {
+            var points = [];
+            
+            for(var i = 0; i < latLngs.length; i++) {
+                points.push(pointNormalizer.denormalize(latLngs[i]));
+            }
+            
+            return {
+                points: points
+            };
+        };
+    }
+]);;/**
+ * Convierte el objeto Point de Creof doctrine de symfony a un objeto LatLng de leaflet
+ */
+angular.module('ap-maps').service('pointNormalizer', [
+    function() {
+        this.normalize = function(point) {
+            return L.latLng(point.x, point.y);
+        };
+        
+        this.denormalize = function(latLng) {
+            return {
+                x: latLng.lat,
+                y: latLng.lng
+            };
+        };
+    }
+]);;/**
+ * Convierte el objeto LineString a un arreglo de latLangs de leaflet
+ */
+angular.module('ap-maps').service('polygonNormalizer', [
+    'linestringNormalizer',
+    function(linestringNormalizer) {
+        this.normalize = function(polygon) {
+            var rings = [];
+            
+            for(var i = 0; i < polygon.rings.length; i++) {
+                var lineString = polygon.rings[i];
+                rings.push(linestringNormalizer.serialize(lineString));
+            }
+            
+            console.log('rings',rings);
+            
+            return rings;
+        };
+        
+        
+        this.denormalize = function(latlngs) {
+            return latlngs;
         };
     }
 ]);;angular.module('adminPanel').run(['$templateCache', function ($templateCache) {
