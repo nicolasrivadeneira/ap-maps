@@ -40,7 +40,7 @@ angular.module('ap-maps', [
                 }
                 
                 function removeMarker() {
-                    marker.remove();
+                    map.removeLayer(marker);
                     marker = null;
                 }
                 
@@ -158,9 +158,11 @@ angular.module('ap-maps', [
                 }
                 
                 function clearMap() {
+                    console.log(markers);
                     //removemos todos lo marcadores
                     for(var i = 0; i < markers.length; i++) {
-                        markers[i].remove();
+                        markers[i].off('click',onClickMarker); 
+                        map.removeLayer(markers[i]);
                     }
                     //limpiamos el arreglo
                     markers = [];
@@ -268,9 +270,9 @@ angular.module('ap-maps', [
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        
+                        console.log('val',val);
                         var latLng = pointNormalizer.normalize(val);
-                        
+                        console.log('latLng',latLng);
                         scope.model.latitud = latLng.lat;
                         scope.model.longitud = latLng.lng;
                     }
@@ -434,7 +436,8 @@ angular.module('ap-maps').service('linestringNormalizer', [
 angular.module('ap-maps').service('pointNormalizer', [
     function() {
         this.normalize = function(point) {
-            return L.latLng(point.x, point.y);
+            console.log('point',point);
+            return L.latLng(point.coordinates[0], point.coordinates[1]);
         };
         
         this.denormalize = function(latLng) {

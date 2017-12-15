@@ -37,7 +37,7 @@ angular.module('ap-maps').directive('apMapPoint', [
                 }
                 
                 function removeMarker() {
-                    marker.remove();
+                    map.removeLayer(marker);
                     marker = null;
                 }
                 

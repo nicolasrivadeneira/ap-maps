@@ -79,9 +79,11 @@ angular.module('ap-maps').directive('apMapPolygon', [
                 }
                 
                 function clearMap() {
+                    console.log(markers);
                     //removemos todos lo marcadores
                     for(var i = 0; i < markers.length; i++) {
-                        markers[i].remove();
+                        markers[i].off('click',onClickMarker); 
+                        map.removeLayer(markers[i]);
                     }
                     //limpiamos el arreglo
                     markers = [];

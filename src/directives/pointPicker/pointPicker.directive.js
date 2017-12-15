@@ -31,9 +31,9 @@ angular.module('ap-maps').directive('pointPicker', [
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        
+                        console.log('val',val);
                         var latLng = pointNormalizer.normalize(val);
-                        
+                        console.log('latLng',latLng);
                         scope.model.latitud = latLng.lat;
                         scope.model.longitud = latLng.lng;
                     }
