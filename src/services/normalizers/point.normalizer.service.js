@@ -4,8 +4,7 @@
 angular.module('ap-maps').service('pointNormalizer', [
     function() {
         this.normalize = function(point) {
-            console.log('point',point);
-            return L.latLng(point.coordinates[0], point.coordinates[1]);
+            return L.latLng(point.x, point.y);
         };
         
         this.denormalize = function(latLng) {

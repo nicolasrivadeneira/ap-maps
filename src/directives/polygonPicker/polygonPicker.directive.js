@@ -1,6 +1,6 @@
 angular.module('ap-maps').directive('polygonPicker', [
-    'mapService','$rootScope',
-    function(mapService,$rootScope) {
+    'polygonNormalizer','$rootScope',
+    function(polygonNormalizer,$rootScope) {
         return {
             require: 'ngModel',
             restrict: 'AE',
@@ -10,17 +10,19 @@ angular.module('ap-maps').directive('polygonPicker', [
             link: function(scope, elem, attr, ngModel) {
                 var polygon = null;
                 
-                var destroyEventMapPicker = scope.$on('ap-map:mappicker',function(event, name, latLngs) {
+                var destroyEventMapPicker = scope.$on('ap-map:polygonpicker',function(event, name, rings) {
                     if(scope.name !== name) return;
                     
-                    var points = [];
-                    for(var i = 0; i < latLngs.length; i++) {
-                        points.push({
-                            latitud: latLngs[i].lat,
-                            longitud: latLngs[i].lng
-                        });
-                    }
-                    ngModel.$setViewValue(points);
+//                    var points = [];
+//                    for(var i = 0; i < latLngs.length; i++) {
+//                        points.push({
+//                            latitud: latLngs[i].lat,
+//                            longitud: latLngs[i].lng
+//                        });
+//                    }
+//                    ngModel.$setViewValue(points);
+                    var obj = polygonNormalizer.denormalize(rings);
+                    ngModel.$setViewValue(obj);
                 });
                 
                 scope.clickBtn = function() {
@@ -34,7 +36,11 @@ angular.module('ap-maps').directive('polygonPicker', [
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        polygon = val;
+                        console.log('polygon val', val);
+                        
+                        polygon = polygonNormalizer.normalize(val);
+                        
+                        console.log('polygon val', polygon);
                     }
                 });
                 

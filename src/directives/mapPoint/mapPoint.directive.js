@@ -37,7 +37,7 @@ angular.module('ap-maps').directive('apMapPoint', [
                 }
                 
                 function removeMarker() {
-                    map.removeLayer(marker);
+                    marker.remove();
                     marker = null;
                 }
                 
@@ -55,7 +55,7 @@ angular.module('ap-maps').directive('apMapPoint', [
                     $rootScope.$broadcast('ap-map:pointpicker', scope.name, latLng);
                 }
                 
-                scope.$on('apMap:showOnMap', function(event, name, lat, lng) {
+                scope.$on('apMap:showOnMapPoint', function(event, name, lat, lng) {
                     if(scope.name !== name || lat === null || lng === null) return;
                     setMarker(lat, lng);
                 });

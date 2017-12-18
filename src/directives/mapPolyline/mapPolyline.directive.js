@@ -1,4 +1,4 @@
-angular.module('ap-maps').directive('apMapPolygon', [
+angular.module('ap-maps').directive('apMapPolyline', [
     'mapService','$rootScope',
     function(mapService,$rootScope) {
         return {
@@ -21,9 +21,6 @@ angular.module('ap-maps').directive('apMapPolygon', [
                 
                 //instancia de polyline leaflet
                 var polyline = null;
-                
-                //instancia de polygon leaflet
-                var polygon = null;
                 
                 //inicializamos el mapa
                 mapService.init(elemMap[0]).then(function(m) {
@@ -78,6 +75,7 @@ angular.module('ap-maps').directive('apMapPolygon', [
                 }
                 
                 function clearMap() {
+                    console.log(markers);
                     //removemos todos lo marcadores
                     for(var i = 0; i < markers.length; i++) {
                         markers[i].off('click',onClickMarker); 
@@ -90,12 +88,6 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     if(polyline !== null) {
                         polyline.remove();
                         polyline = null; 
-                    }
-                    
-                    //removemos el poligono
-                    if(polygon !== null) {
-                        polygon.remove();
-                        polygon = null; 
                     }
                 }
                 
@@ -113,30 +105,22 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     clearMap();
                     
                     //creamos el poligono si el type es polygon, sino creamos una polilinea.
-                    polygon = L.polygon(latLngs, {color: 'red'}).addTo(map);
-                    
-                    console.log('latLngs',latLngs);
-                    //normalizamos el poligono en un anillo
-                    var ring = [];
-                    ring.push(latLngs);
+                    polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
                     
                     //emitimos el evento
-                    $rootScope.$broadcast('ap-map:polygonpicker', scope.name, ring);
+                    $rootScope.$broadcast('ap-map:polylinepicker', scope.name, latLngs);
                 };
                 
                 scope.clear = clearMap;
                 
-                var destroyshowOnMapPolygon = scope.$on('apMap:showOnMapPolygon', function(event, name, latLngs) {
+                var destroyshowOnMapPolyline = scope.$on('apMap:showOnMapPolyline', function(event, name, latLngs) {
                     if(scope.name !== name || latLngs === null) return;
                     
                     //borramos todo
                     clearMap();
                     
-                    //creamos el poligono
-                    //dado que el poligono es un conjunto de LineStrings, tomando el caso solamente de que tenemos 
-                    //uno solo, se usa el [0]
-                    
-                    polygon = L.polygon(latLngs[0].latLngs, {color: 'red'}).addTo(map);
+                    //mostramos la polilinea segun los latLngs que tengamos
+                    polyline = L.polyline(latLngs.latLngs, {color: 'red'}).addTo(map);
                 });
                 
                 
@@ -146,11 +130,11 @@ angular.module('ap-maps').directive('apMapPolygon', [
                         map.off('click', onCLickMap);
                     }
                     
-                    destroyshowOnMapPolygon();
+                    destroyshowOnMapPolyline();
                     destroyEvent();
                 });
             },
-            templateUrl: 'directives/mapPolygon/mapPolygon.template.html'
+            templateUrl: 'directives/mapPolyline/mapPolyline.template.html'
         };
     }
 ]);

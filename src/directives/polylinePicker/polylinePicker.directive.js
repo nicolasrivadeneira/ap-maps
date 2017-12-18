@@ -1,6 +1,6 @@
-angular.module('ap-maps').directive('pointPicker', [
-    'pointNormalizer','$rootScope',
-    function(pointNormalizer,$rootScope) {
+angular.module('ap-maps').directive('polylinePicker', [
+    'linestringNormalizer','$rootScope',
+    function(linestringNormalizer,$rootScope) {
         return {
             require: 'ngModel',
             restrict: 'AE',
@@ -8,15 +8,12 @@ angular.module('ap-maps').directive('pointPicker', [
                 name: '@'
             },
             link: function(scope, elem, attr, ngModel) {
-                scope.model = {
-                    latitud: null,
-                    longitud: null
-                };
+                var polygon = null;
                 
-                var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, latLng) {
+                var destroyEventMapPicker = scope.$on('ap-map:polylinepicker',function(event, name, latLngs) {
                     if(scope.name !== name) return;
-                    
-                    var obj = pointNormalizer.denormalize(latLng);
+
+                    var obj = linestringNormalizer.denormalize(latLngs);
                     ngModel.$setViewValue(obj);
                 });
                 
@@ -24,27 +21,24 @@ angular.module('ap-maps').directive('pointPicker', [
                     if(attr.view) {
                         $rootScope.$broadcast('apBox:show', attr.view);
                     }
-                    $rootScope.$broadcast('apMap:showOnMapPoint', scope.name, scope.model.latitud, scope.model.longitud);
+                    $rootScope.$broadcast('apMap:showOnMapPolyline', scope.name, polygon);
                 };
                 
                 scope.$watch(function () {
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        var latLng = pointNormalizer.normalize(val);
-
-                        scope.model.latitud = latLng.lat;
-                        scope.model.longitud = latLng.lng;
+                        polygon = linestringNormalizer.normalize(val);
                     }
                 });
                 
                 //destruimos los eventos
                 var destroyEvent = scope.$on('$destroy', function() {
-                    destroyEventPointPicker();
+                    destroyEventMapPicker();
                     destroyEvent();
                 });
             },
-            templateUrl: 'directives/pointPicker/pointPicker.template.html'
+            templateUrl: 'directives/polylinePicker/polylinePicker.template.html'
         };
     }
 ]);

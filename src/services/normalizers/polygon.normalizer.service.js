@@ -9,17 +9,32 @@ angular.module('ap-maps').service('polygonNormalizer', [
             
             for(var i = 0; i < polygon.rings.length; i++) {
                 var lineString = polygon.rings[i];
-                rings.push(linestringNormalizer.serialize(lineString));
+                rings.push(linestringNormalizer.normalize(lineString));
             }
-            
-            console.log('rings',rings);
             
             return rings;
         };
         
         
-        this.denormalize = function(latlngs) {
-            return latlngs;
+        this.denormalize = function(rings) {
+            var lineStrings = [];
+            
+            for(var i = 0; i < rings.length; i++){
+                var ring = rings[i];
+                //controlamos que el poligono este cerrado
+                console.log('ring ' + i, rings[i]);
+                if(!ring[0].equals(ring[ring.length - 1])) {
+                    ring.push(ring[0]);
+                }
+                var lineString = linestringNormalizer.denormalize(ring);
+                
+                console.log('lineString ' + i, lineString);
+                lineStrings.push(lineString);
+            }
+            
+            return {
+                rings:lineStrings
+            };
         };
     }
 ]);
