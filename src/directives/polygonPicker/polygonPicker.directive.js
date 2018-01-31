@@ -1,6 +1,6 @@
 angular.module('ap-maps').directive('polygonPicker', [
-    'polygonNormalizer','$rootScope',
-    function(polygonNormalizer,$rootScope) {
+    '$rootScope',
+    function($rootScope) {
         return {
             require: 'ngModel',
             restrict: 'AE',
@@ -10,19 +10,10 @@ angular.module('ap-maps').directive('polygonPicker', [
             link: function(scope, elem, attr, ngModel) {
                 var polygon = null;
                 
-                var destroyEventMapPicker = scope.$on('ap-map:polygonpicker',function(event, name, rings) {
+                var destroyEventMapPicker = scope.$on('ap-map:polygonpicker',function(event, name, polygon) {
                     if(scope.name !== name) return;
                     
-//                    var points = [];
-//                    for(var i = 0; i < latLngs.length; i++) {
-//                        points.push({
-//                            latitud: latLngs[i].lat,
-//                            longitud: latLngs[i].lng
-//                        });
-//                    }
-//                    ngModel.$setViewValue(points);
-                    var obj = polygonNormalizer.denormalize(rings);
-                    ngModel.$setViewValue(obj);
+                    ngModel.$setViewValue(polygon);
                 });
                 
                 scope.clickBtn = function() {
@@ -36,11 +27,7 @@ angular.module('ap-maps').directive('polygonPicker', [
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        console.log('polygon val', val);
-                        
-                        polygon = polygonNormalizer.normalize(val);
-                        
-                        console.log('polygon val', polygon);
+                        polygon = val;
                     }
                 });
                 
