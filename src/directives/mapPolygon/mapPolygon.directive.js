@@ -140,7 +140,7 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     
                     //emitimos el evento
                     $rootScope.$broadcast('ap-map:polygonpicker', scope.name, denormalizedPolygon);
-                    if(!angular.isUndefined(ngModel)) {
+                    if(ngModel !== null) {
                         ngModel.$setViewValue(denormalizedPolygon);
                     }
                 };
@@ -153,7 +153,7 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     setPolygonOnMap(polygon);
                 });
                 
-                if(!angular.isUndefined(ngModel)) {
+                if(ngModel !== null) {
                     scope.$watch(function () {
                         return ngModel.$modelValue;
                     }, function (val) {

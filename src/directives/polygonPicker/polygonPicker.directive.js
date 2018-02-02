@@ -1,6 +1,6 @@
 angular.module('ap-maps').directive('polygonPicker', [
-    '$rootScope',
-    function($rootScope) {
+    '$rootScope','$timeout',
+    function($rootScope,$timeout) {
         return {
             require: 'ngModel',
             restrict: 'AE',
@@ -8,7 +8,8 @@ angular.module('ap-maps').directive('polygonPicker', [
                 name: '@'
             },
             link: function(scope, elem, attr, ngModel) {
-                var polygon = null;
+                var self = this;
+                self.polygon = null;
                 
                 var destroyEventMapPicker = scope.$on('ap-map:polygonpicker',function(event, name, polygon) {
                     if(scope.name !== name) return;
@@ -19,15 +20,19 @@ angular.module('ap-maps').directive('polygonPicker', [
                 scope.clickBtn = function() {
                     if(attr.view) {
                         $rootScope.$broadcast('apBox:show', attr.view);
+                        $timeout(function() {
+                            $rootScope.$broadcast('apMap:showOnMapPolygon', scope.name, self.polygon);
+                        });
+                    } else {
+                        $rootScope.$broadcast('apMap:showOnMapPolygon', scope.name, self.polygon);
                     }
-                    $rootScope.$broadcast('apMap:showOnMapPolygon', scope.name, polygon);
                 };
                 
                 scope.$watch(function () {
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        polygon = val;
+                        self.polygon = val;
                     }
                 });
                 

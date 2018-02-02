@@ -1,6 +1,6 @@
 angular.module('ap-maps').directive('pointPicker', [
-    'pointNormalizer','$rootScope',
-    function(pointNormalizer,$rootScope) {
+    '$rootScope','$timeout',
+    function($rootScope,$timeout) {
         return {
             require: 'ngModel',
             restrict: 'AE',
@@ -8,33 +8,37 @@ angular.module('ap-maps').directive('pointPicker', [
                 name: '@'
             },
             link: function(scope, elem, attr, ngModel) {
+                var self = this;
                 scope.model = {
                     latitud: null,
                     longitud: null
                 };
+                self.point = null;
                 
-                var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, latLng) {
+                var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, point) {
                     if(scope.name !== name) return;
-                    
-                    var obj = pointNormalizer.denormalize(latLng);
-                    ngModel.$setViewValue(obj);
+
+                    ngModel.$setViewValue(point);
                 });
                 
                 scope.clickBtn = function() {
                     if(attr.view) {
                         $rootScope.$broadcast('apBox:show', attr.view);
+                        $timeout(function() {
+                            $rootScope.$broadcast('apMap:showOnMapPoint', scope.name, self.point);
+                        });
+                    } else {
+                        $rootScope.$broadcast('apMap:showOnMapPoint', scope.name, self.point);
                     }
-                    $rootScope.$broadcast('apMap:showOnMapPoint', scope.name, scope.model.latitud, scope.model.longitud);
                 };
                 
                 scope.$watch(function () {
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
-                        var latLng = pointNormalizer.normalize(val);
-
-                        scope.model.latitud = latLng.lat;
-                        scope.model.longitud = latLng.lng;
+                        self.point = val;
+                        scope.model.latitud = val.y;
+                        scope.model.longitud = val.x;
                     }
                 });
                 

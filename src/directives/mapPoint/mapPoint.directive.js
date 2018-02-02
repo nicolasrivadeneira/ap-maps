@@ -1,70 +1,110 @@
 angular.module('ap-maps').directive('apMapPoint', [
-    'mapService','$rootScope',
-    function(mapService,$rootScope) {
+    'mapService','pointNormalizer','$rootScope','$timeout',
+    function(mapService,pointNormalizer,$rootScope,$timeout) {
         return {
             restrict: 'AE',
+            require: '?ngModel',
             scope: {
                 name: '@'
             },
-            link: function(scope, elem, attr) {
+            link: function(scope, elem, attr, ngModel) {
+                var readonly = (!angular.isUndefined(attr.readonly));
+                var self = this;
                 //elemento del DOM en donde se va a poner el mapa
-                var elemMap = elem.find('.map');
+                self.elemMap = elem.find('.map');
                 
                 //seteamos el alto del mapa 
                 scope.height = mapService.height;
                 
                 //instancia de leaflet del mapa
-                var map = null;
+                self.map = null;
                 
                 //instancia del marcador sobre el mapa
-                var marker = null;
+                self.marker = null;
+                
+                self.point = null;
                 
                 //inicializamos el mapa
-                mapService.init(elemMap[0]).then(function(m) {
-                    map = m;
+                self.initPromise = mapService.init(self.elemMap[0]).then(function(m) {
+                    self.map = m;
                     
-                    //agregamos el evento click sobre el mapa
-                    map.on('click', onCLickMap);
+                    if(!readonly) {
+                        //agregamos el evento click sobre el mapa
+                        self.map.on('click', onCLickMap);
+                    }
+                    
+                    if(self.point !== null) {
+                        self.map.panTo(self.point);
+                    
+                        setMarker(self.point);
+                    }
                 });
                 
-                function setMarker(lat, lng) {
+                function setPointOnMap(point) {
+                    var latLng = pointNormalizer.normalize(point);
+                    self.point = latLng;
+                    
+                    if(self.map !== null) {
+                        self.map.panTo(latLng);
+                    
+                        setMarker(latLng);
+                    }
+                }
+                
+                function setMarker(latLng) {
                     //ya hay un marcardor, lo eliminamos primero
-                    if(marker !== null) {
+                    if(self.marker !== null) {
                         removeMarker();
                     }
-                    marker = L.marker([lat, lng]);
-                    marker.addTo(map);
+                    self.marker = L.marker([latLng.lat, latLng.lng]);
+                    self.marker.addTo(self.map);
                 }
                 
                 function removeMarker() {
-                    marker.remove();
-                    marker = null;
+                    self.marker.remove();
+                    self.marker = null;
                 }
                 
                 
                 //evento al hacer click sobre el mapa.
                 function onCLickMap(e) {
                     //prevenimos que no haya 
-                    if(map === null) return;
+                    if(self.map === null) return;
                     var latLng = e.latlng;
                     
                     //ponemos el marcador en el mapa
-                    setMarker(latLng.lat, latLng.lng);
+                    setMarker(latLng);
+                    
+                    var denormalizedPoint = pointNormalizer.denormalize(latLng);
                     
                     //emitimos el evento
-                    $rootScope.$broadcast('ap-map:pointpicker', scope.name, latLng);
+                    $rootScope.$broadcast('ap-map:pointpicker', scope.name, denormalizedPoint);
+                    if(ngModel !== null) {
+                        ngModel.$setViewValue(denormalizedPoint);
+                    }
                 }
                 
-                scope.$on('apMap:showOnMapPoint', function(event, name, lat, lng) {
-                    if(scope.name !== name || lat === null || lng === null) return;
-                    setMarker(lat, lng);
+                scope.$on('apMap:showOnMapPoint', function(event, name, point) {
+                    if(scope.name !== name || point === null) return;
+                    
+                    setPointOnMap(point);
                 });
                 
                 
+                if(ngModel !== null) {
+                    scope.$watch(function () {
+                        return ngModel.$modelValue;
+                    }, function (val) {
+                        if (val && angular.isObject(val)) {
+                            setPointOnMap(val);
+                        }
+                    });
+                }
+                
                 //destruimos los eventos
                 var destroyEvent = scope.$on('$destroy', function() {
-                    if(map !== null) {
-                        map.off('click', onCLickMap);
+                    if(self.map !== null) {
+                        self.map.off('click', onCLickMap);
                     }
                     
                     destroyEvent();
