@@ -124,7 +124,8 @@ angular.module('ap-maps', [
             restrict: 'AE',
             require: '?ngModel',
             scope: {
-                name: '@'
+                name: '@',
+                fixedPolygons: '=?'
             },
             link: function(scope, elem, attr, ngModel) {
                 var self = this;
@@ -145,7 +146,10 @@ angular.module('ap-maps', [
                 self.polyline = null;
                 
                 //instancia de polygon leaflet
-                self.polygon = null;
+                self.polygon = [];
+                
+                //instancia de polygon leaflet
+                self.fixedPolygons = [];
                 
                 //inicializamos el mapa
                 mapService.init(self.elemMap[0]).then(function(m) {
@@ -199,7 +203,7 @@ angular.module('ap-maps', [
                     self.polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
                 }
                 
-                function clearMap() {
+                function clearPolyline() {
                     //removemos todos lo marcadores
                     for(var i = 0; i < self.markers.length; i++) {
                         self.markers[i].off('click',onClickMarker); 
@@ -213,25 +217,32 @@ angular.module('ap-maps', [
                         self.polyline.remove();
                         self.polyline = null; 
                     }
+                }
+                
+                function clearMap() {
+                    clearPolyline();
                     
-                    //removemos el poligono
-                    if(self.polygon !== null) {
-                        self.polygon.remove();
-                        self.polygon = null; 
+                    //removemos los poligonos
+                    console.log(self.polygon);
+                    for(var i = 0; i < self.polygon.length; i++) { 
+                        console.log(self.polygon[i].remove());
                     }
+                    self.polygon = []; 
                 }
                 
                 /**
                  * Setea el poligono denormalizado
                  */
-                function setPolygonOnMap(polygon) {
+                function setPolygonsOnMap(polygon) {
                     $timeout(function(){
                         var normalizedPolygon =  polygonNormalizer.normalize(polygon);
-                        
                         //limpiamos el mapa
-                        clearMap();
+                        clearPolyline();
                     
-                        self.polygon = L.polygon(normalizedPolygon[0].latLngs, {color: 'red'}).addTo(self.map);
+                        self.polygon = [];
+                        for(var i = 0; i < normalizedPolygon.length; i++) {
+                            self.polygon.push(L.polygon(normalizedPolygon[i].latLngs, {color: 'red'}).addTo(self.map));
+                        }
                     });
                 }
                 
@@ -246,10 +257,10 @@ angular.module('ap-maps', [
                     var latLngs = self.polyline.getLatLngs();
                     
                     //borramos todo
-                    clearMap();
+                    clearPolyline();
                     
                     //creamos el poligono si el type es polygon, sino creamos una polilinea.
-                    self.polygon = L.polygon(latLngs, {color: 'red'}).addTo(self.map);
+                    self.polygon.push(L.polygon(latLngs, {color: 'red'}).addTo(self.map));
                     
                     //normalizamos el poligono en un anillo
                     var ring = [];
@@ -269,7 +280,7 @@ angular.module('ap-maps', [
                 var destroyshowOnMapPolygon = scope.$on('apMap:showOnMapPolygon', function(event, name, polygon) {
                     if(scope.name !== name || polygon === null) return;
                     
-                    setPolygonOnMap(polygon);
+                    setPolygonsOnMap(polygon);
                 });
                 
                 if(ngModel !== null) {
@@ -277,10 +288,27 @@ angular.module('ap-maps', [
                         return ngModel.$modelValue;
                     }, function (val) {
                         if (val && angular.isObject(val)) {
-                            setPolygonOnMap(val);
+                            setPolygonsOnMap(val);
                         }
                     });
                 }
+                
+                scope.$watch('fixedPolygons', function(polygons){
+                    $timeout(function(){
+                        var normalizedPolygon = polygonNormalizer.normalize(polygons), i;
+
+                        //removemos los poligonos
+                        for(i = 0; i < self.fixedPolygons.length; i++) { 
+                            self.fixedPolygons[i].remove();
+                        }
+                        self.fixedPolygons = []; 
+                    
+                        //seteamos los nuevos poligonos
+                        for(i = 0; i < normalizedPolygon.length; i++) {
+                            self.fixedPolygons.push(L.polygon(normalizedPolygon[i].latLngs, {color: 'blue'}).addTo(self.map));
+                        }
+                    });
+                });
                 
                 
                 //destruimos los eventos
@@ -648,13 +676,21 @@ angular.module('ap-maps').service('linestringNormalizer', [
     'pointNormalizer',
     function(pointNormalizer) {
         this.normalize = function(lineString) {
-            var latLngs = [];
+            var latLngs = [], i, point;
             
             //tratamiento de los puntos
-            for(var i = 0; i < lineString.points.length; i++) {
-                var point = lineString.points[i];
-                latLngs.push(pointNormalizer.normalize(point));
+            if(angular.isArray(lineString)) {
+                for(i = 0; i < lineString.length; i++) {
+                    point = lineString[i];
+                    latLngs.push(pointNormalizer.normalize(point));
+                }
+            } else if(lineString) {
+                for(i = 0; i < lineString.points.length; i++) {
+                    point = lineString.points[i];
+                    latLngs.push(pointNormalizer.normalize(point));
+                }
             }
+            
             
             return {
                 latLngs: latLngs,
@@ -681,6 +717,9 @@ angular.module('ap-maps').service('linestringNormalizer', [
 angular.module('ap-maps').service('pointNormalizer', [
     function() {
         this.normalize = function(point) {
+            if(angular.isArray(point)) {
+                return L.latLng(point[1], point[0]);
+            }
             return L.latLng(point.y, point.x);
         };
         
@@ -698,11 +737,18 @@ angular.module('ap-maps').service('polygonNormalizer', [
     'linestringNormalizer',
     function(linestringNormalizer) {
         this.normalize = function(polygon) {
-            var rings = [];
+            var rings = [], i, lineString;
             
-            for(var i = 0; i < polygon.rings.length; i++) {
-                var lineString = polygon.rings[i];
-                rings.push(linestringNormalizer.normalize(lineString));
+            if(angular.isArray(polygon)) {
+                for(i = 0; i < polygon.length; i++) {
+                    lineString = polygon[i];
+                    rings.push(linestringNormalizer.normalize(lineString));
+                }
+            } else if(polygon) {
+                for(i = 0; i < polygon.rings.length; i++) {
+                    lineString = polygon.rings[i];
+                    rings.push(linestringNormalizer.normalize(lineString));
+                }
             }
             
             return rings;

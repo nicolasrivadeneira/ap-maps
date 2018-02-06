@@ -7,13 +7,21 @@ angular.module('ap-maps').service('linestringNormalizer', [
     'pointNormalizer',
     function(pointNormalizer) {
         this.normalize = function(lineString) {
-            var latLngs = [];
+            var latLngs = [], i, point;
             
             //tratamiento de los puntos
-            for(var i = 0; i < lineString.points.length; i++) {
-                var point = lineString.points[i];
-                latLngs.push(pointNormalizer.normalize(point));
+            if(angular.isArray(lineString)) {
+                for(i = 0; i < lineString.length; i++) {
+                    point = lineString[i];
+                    latLngs.push(pointNormalizer.normalize(point));
+                }
+            } else if(lineString) {
+                for(i = 0; i < lineString.points.length; i++) {
+                    point = lineString.points[i];
+                    latLngs.push(pointNormalizer.normalize(point));
+                }
             }
+            
             
             return {
                 latLngs: latLngs,

@@ -5,11 +5,18 @@ angular.module('ap-maps').service('polygonNormalizer', [
     'linestringNormalizer',
     function(linestringNormalizer) {
         this.normalize = function(polygon) {
-            var rings = [];
+            var rings = [], i, lineString;
             
-            for(var i = 0; i < polygon.rings.length; i++) {
-                var lineString = polygon.rings[i];
-                rings.push(linestringNormalizer.normalize(lineString));
+            if(angular.isArray(polygon)) {
+                for(i = 0; i < polygon.length; i++) {
+                    lineString = polygon[i];
+                    rings.push(linestringNormalizer.normalize(lineString));
+                }
+            } else if(polygon) {
+                for(i = 0; i < polygon.rings.length; i++) {
+                    lineString = polygon.rings[i];
+                    rings.push(linestringNormalizer.normalize(lineString));
+                }
             }
             
             return rings;

@@ -4,6 +4,9 @@
 angular.module('ap-maps').service('pointNormalizer', [
     function() {
         this.normalize = function(point) {
+            if(angular.isArray(point)) {
+                return L.latLng(point[1], point[0]);
+            }
             return L.latLng(point.y, point.x);
         };
         
