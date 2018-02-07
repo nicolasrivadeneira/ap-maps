@@ -81,7 +81,7 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     self.polyline.remove();
                     
                     //creamos de nuevo la polilinea
-                    self.polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
+                    self.polyline = L.polyline(latLngs, {color: 'red'}).addTo(self.map);
                 }
                 
                 function clearPolyline() {
@@ -104,10 +104,11 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     clearPolyline();
                     
                     //removemos los poligonos
-                    console.log(self.polygon);
+                    console.log('self.polygon',self.polygon);
                     for(var i = 0; i < self.polygon.length; i++) { 
-                        console.log(self.polygon[i].remove());
+                        self.polygon[i].remove();
                     }
+                    
                     self.polygon = []; 
                 }
                 
@@ -118,7 +119,7 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     $timeout(function(){
                         var normalizedPolygon =  polygonNormalizer.normalize(polygon);
                         //limpiamos el mapa
-                        clearPolyline();
+                        clearMap();
                     
                         self.polygon = [];
                         for(var i = 0; i < normalizedPolygon.length; i++) {
@@ -141,13 +142,19 @@ angular.module('ap-maps').directive('apMapPolygon', [
                     clearPolyline();
                     
                     //creamos el poligono si el type es polygon, sino creamos una polilinea.
-                    self.polygon.push(L.polygon(latLngs, {color: 'red'}).addTo(self.map));
+                    if(ngModel === null) {
+                        self.polygon.push(L.polygon(latLngs, {color: 'red'}).addTo(self.map));
+                    }
                     
                     //normalizamos el poligono en un anillo
-                    var ring = [];
-                    ring.push(latLngs);
-                    
-                    var denormalizedPolygon = polygonNormalizer.denormalize(ring);
+                    var rings = [];
+                    for(var i = 0; i < self.polygon.length; i++) {
+                        rings.push(self.polygon[i].getLatLngs()[0]);
+                    }
+                    if(ngModel !== null) {
+                        rings.push(latLngs);
+                    }
+                    var denormalizedPolygon = polygonNormalizer.denormalize(rings);
                     
                     //emitimos el evento
                     $rootScope.$broadcast('ap-map:polygonpicker', scope.name, denormalizedPolygon);
