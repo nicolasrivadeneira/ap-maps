@@ -770,6 +770,7 @@ angular.module('ap-maps').service('polygonNormalizer', [
 
                 //controlamos que el poligono este cerrado
                 var lineString = linestringNormalizer.denormalize(ring);
+                lineString.points.push(lineString.points[0]);
                 
                 lineStrings.push(lineString);
             }
