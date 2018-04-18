@@ -1,12 +1,15 @@
 angular.module('ap-maps').directive('apMapPolyline', [
-    'mapService','$rootScope',
-    function(mapService,$rootScope) {
+    'mapService','linestringNormalizer','$rootScope','$timeout',
+    function(mapService,linestringNormalizer,$rootScope,$timeout) {
         return {
             restrict: 'AE',
+            require: '?ngModel',
             scope: {
                 name: '@'
             },
-            link: function(scope, elem, attr) {
+            link: function(scope, elem, attr, ngModel) {
+                var self = this;
+                elem.addClass('ap-map-polyline');
                 //elemento del DOM en donde se va a poner el mapa
                 var elemMap = elem.find('.map');
                 
@@ -14,47 +17,48 @@ angular.module('ap-maps').directive('apMapPolyline', [
                 scope.height = mapService.height;
                 
                 //instancia de leaflet del mapa
-                var map = null;
+                self.map = null;
                 
                 //arreglo de marcadores
-                var markers = [];
+                self.markers = [];
                 
                 //instancia de polyline leaflet
-                var polyline = null;
+                self.polyline = null;
                 
                 //inicializamos el mapa
                 mapService.init(elemMap[0]).then(function(m) {
-                    map = m;
+                    self.map = m;
                     
                     //agregamos el evento click sobre el mapa
-                    map.on('click', onCLickMap);
+                    self.map.on('click', onCLickMap);
                 });
                 
                 //evento al hacer click sobre el mapa.
                 function onCLickMap(e) {
                     //prevenimos que no haya 
-                    if(map === null) return;
+                    if(self.map === null) return;
                     var latLng = e.latlng;
                     
                     //agregamos un marcador sobre el mapa
                     var marker = L.marker(latLng);
-                    marker.addTo(map);
+                    marker.addTo(self.map);
                     marker.on('click',onClickMarker); 
                     //agregamos el marcador a la lista de marcadores
-                    markers.push(marker);
+                    self.markers.push(marker);
                     
                     //si la polilinea no existe se la crea, caso contrario se agrega el objeto LatLng 
-                    if(polyline === null) {
-                        polyline = L.polyline([latLng], {color: 'red'}).addTo(map);
+                    if(self.polyline === null) {
+                        self.polyline = L.polyline([latLng], {color: 'red'}).addTo(self.map);
                     } else {
-                        polyline.addLatLng(latLng);
+                        self.polyline.addLatLng(latLng);
                     }
                 }
                 
                 
                 function onClickMarker(e) {
                     //obtenemos el arreglo de longitudes y latitudes
-                    var latLngs = polyline.getLatLngs();
+                    var latLngs = self.polyline.getLatLngs();
+                    console.log(self.polyline);
                     
                     //removemos la posicion del arreglo de posiciones
                     for(var i = 0; i < latLngs.length; i++) {
@@ -68,27 +72,39 @@ angular.module('ap-maps').directive('apMapPolyline', [
                     this.remove();
                     
                     //borramos la polilinea
-                    polyline.remove();
+                    self.polyline.remove();
                     
                     //creamos de nuevo la polilinea
-                    polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
+                    self.polyline = L.polyline(latLngs, {color: 'red'}).addTo(self.map);
                 }
                 
                 function clearMap() {
-                    console.log(markers);
+                    console.log(self.markers);
                     //removemos todos lo marcadores
-                    for(var i = 0; i < markers.length; i++) {
-                        markers[i].off('click',onClickMarker); 
-                        markers[i].remove();
+                    for(var i = 0; i < self.markers.length; i++) {
+                        self.markers[i].off('click',onClickMarker); 
+                        self.markers[i].remove();
                     }
                     //limpiamos el arreglo
-                    markers = [];
+                    self.markers = [];
                     
                     //removemos la polilinea
-                    if(polyline !== null) {
-                        polyline.remove();
-                        polyline = null; 
+                    if(self.polyline !== null) {
+                        self.polyline.remove();
+                        self.polyline = null; 
                     }
+                }
+                
+                /**
+                 * Setea la polilinea normalizada
+                 */
+                function setPolylinesOnMap(polyline) {
+                    $timeout(function(){
+                        //limpiamos el mapa
+                        clearMap();
+                    
+                        self.polyline = L.polyline(polyline.latLngs, {color: 'red'}).addTo(self.map);
+                    });
                 }
                 
                 /**
@@ -96,38 +112,57 @@ angular.module('ap-maps').directive('apMapPolyline', [
                  * Si es un poligono, cuando se apreta el boton terminar se cierra el poligono
                  */
                 scope.finish = function() {
-                    if(polyline === null) return;
+                    if(self.polyline === null) return;
                     
                     //obtenemos el arreglo de longitudes y latitudes
-                    var latLngs = polyline.getLatLngs();
+                    var latLngs = self.polyline.getLatLngs();
                     
                     //borramos todo
                     clearMap();
                     
                     //creamos el poligono si el type es polygon, sino creamos una polilinea.
-                    polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
+                    self.polyline = L.polyline(latLngs, {color: 'red'}).addTo(self.map);
+                    
+                    //normalizamos la polilinea
+                    var denormalizedPolyline = linestringNormalizer.denormalize(latLngs);
                     
                     //emitimos el evento
                     $rootScope.$broadcast('ap-map:polylinepicker', scope.name, latLngs);
-                };
+                    
+                    if(ngModel !== null) {
+                        ngModel.$setViewValue(denormalizedPolyline);
+                    }
+                };                   
                 
                 scope.clear = clearMap;
                 
                 var destroyshowOnMapPolyline = scope.$on('apMap:showOnMapPolyline', function(event, name, latLngs) {
+                    console.log('entramos');
                     if(scope.name !== name || latLngs === null) return;
                     
-                    //borramos todo
-                    clearMap();
+                    setPolylinesOnMap(latLngs);
                     
-                    //mostramos la polilinea segun los latLngs que tengamos
-                    polyline = L.polyline(latLngs.latLngs, {color: 'red'}).addTo(map);
+//                    //borramos todo
+//                    clearMap();
+//                    
+//                    //mostramos la polilinea segun los latLngs que tengamos
+//                    self.polyline = L.polyline(latLngs.latLngs, {color: 'red'}).addTo(self.map);
                 });
                 
+                if(ngModel !== null) {
+                    scope.$watch(function () {
+                        return ngModel.$modelValue;
+                    }, function (val) {
+                        if (val && angular.isObject(val)) {
+                            setPolylinesOnMap(val);
+                        }
+                    });
+                }
                 
                 //destruimos los eventos
                 var destroyEvent = scope.$on('$destroy', function() {
-                    if(map !== null) {
-                        map.off('click', onCLickMap);
+                    if(self.map !== null) {
+                        self.map.off('click', onCLickMap);
                     }
                     
                     destroyshowOnMapPolyline();
