@@ -434,8 +434,6 @@ angular.module('ap-maps', [
                  */
                 function setPolylinesOnMap(polyline) {
                     $timeout(function(){
-                        console.log(polyline.latLngs);
-//                        var normalizedPolyline =  linestringNormalizer.normalize(polyline);
                         //limpiamos el mapa
                         clearMap();
                     
@@ -452,7 +450,6 @@ angular.module('ap-maps', [
                     
                     //obtenemos el arreglo de longitudes y latitudes
                     var latLngs = self.polyline.getLatLngs();
-                    console.log(latLngs);
                     
                     //borramos todo
                     clearMap();
@@ -635,7 +632,6 @@ angular.module('ap-maps', [
                 scope.clickBtn = function () {
                     if (attr.view) {
                         $rootScope.$broadcast('apBox:show', attr.view);
-                        console.log(polygon);
                         $timeout(function () {
                             $rootScope.$broadcast('apMap:showOnMapPolyline', scope.name, polygon);
                         });
