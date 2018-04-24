@@ -5,7 +5,8 @@ angular.module('ap-maps').directive('pointPicker', [
             require: 'ngModel',
             restrict: 'AE',
             scope: {
-                name: '@'
+                name: '@',
+                ocultarBoton: '<'
             },
             link: function(scope, elem, attr, ngModel) {
                 var self = this;

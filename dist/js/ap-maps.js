@@ -514,7 +514,8 @@ angular.module('ap-maps', [
             require: 'ngModel',
             restrict: 'AE',
             scope: {
-                name: '@'
+                name: '@',
+                ocultarBoton: '<'
             },
             link: function(scope, elem, attr, ngModel) {
                 var self = this;
@@ -523,6 +524,7 @@ angular.module('ap-maps', [
                     longitud: null
                 };
                 self.point = null;
+                console.log(scope.ocultarBoton);
                 
                 var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, point) {
                     if(scope.name !== name) return;
@@ -828,7 +830,7 @@ angular.module('ap-maps').service('polygonNormalizer', [
   $templateCache.put("directives/mapPolyline/mapPolyline.template.html",
     "<div class=map ng-style=\"{'height':height}\"></div><button type=button class=button ng-click=clear()>Limpiar</button><button type=button class=button ng-click=finish()>Terminar</button>");
   $templateCache.put("directives/pointPicker/pointPicker.template.html",
-    "<div class=row><div class=\"columns small-12 large-6\"><label>Latitud <input type=text ng-value=model.latitud readonly></label></div><div class=\"columns small-12 large-6\"><label>Longitud <input type=text ng-value=model.longitud readonly></label></div><div class=\"columns small-12 large-6\"><button type=button class=button ng-click=clickBtn()>Ver Punto en Mapa</button></div></div>");
+    "<div class=row><div class=\"columns small-12 large-6\"><label>Latitud <input type=text ng-value=model.latitud readonly></label></div><div class=\"columns small-12 large-6\"><label>Longitud <input type=text ng-value=model.longitud readonly></label></div><div class=\"columns small-12 large-6\" ng-if=!ocultarBoton><button type=button class=button ng-click=clickBtn()>Ver Punto en Mapa</button></div></div>");
   $templateCache.put("directives/polygonPicker/polygonPicker.template.html",
     "<div class=row><div class=\"columns small-12 large-6\"><button type=button class=button ng-click=clickBtn()>Ver en Mapa</button></div></div>");
   $templateCache.put("directives/polylinePicker/polylinePicker.template.html",
