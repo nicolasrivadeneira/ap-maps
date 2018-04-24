@@ -508,8 +508,8 @@ angular.module('ap-maps', [
     }
 ]);
 ;angular.module('ap-maps').directive('pointPicker', [
-    '$rootScope','$timeout',
-    function($rootScope,$timeout) {
+    '$rootScope', '$timeout',
+    function ($rootScope, $timeout) {
         return {
             require: 'ngModel',
             restrict: 'AE',
@@ -517,44 +517,88 @@ angular.module('ap-maps', [
                 name: '@',
                 ocultarBoton: '<'
             },
-            link: function(scope, elem, attr, ngModel) {
+            link: function (scope, elem, attr, ngModel) {
                 var self = this;
                 scope.model = {
                     latitud: null,
                     longitud: null
                 };
                 self.point = null;
-                console.log(scope.ocultarBoton);
-                
-                var destroyEventPointPicker = scope.$on('ap-map:pointpicker',function(event, name, point) {
-                    if(scope.name !== name) return;
+
+                var destroyEventPointPicker = scope.$on('ap-map:pointpicker', function (event, name, point) {
+                    if (scope.name !== name)
+                        return;
 
                     ngModel.$setViewValue(point);
                 });
-                
-                scope.clickBtn = function() {
-                    if(attr.view) {
+
+                scope.clickBtn = function () {
+                    if (attr.view) {
                         $rootScope.$broadcast('apBox:show', attr.view);
-                        $timeout(function() {
+                        $timeout(function () {
                             $rootScope.$broadcast('apMap:showOnMapPoint', scope.name, self.point);
                         });
                     } else {
                         $rootScope.$broadcast('apMap:showOnMapPoint', scope.name, self.point);
                     }
                 };
-                
+
                 scope.$watch(function () {
                     return ngModel.$modelValue;
                 }, function (val) {
                     if (val) {
+                        console.log(val);
                         self.point = val;
                         scope.model.latitud = val.y;
                         scope.model.longitud = val.x;
                     }
                 });
-                
+
+                scope.cambioCoordeandas = function () {
+                    var latitud = false, longitud = false;
+                    scope.error = false;
+
+                    //validacion
+                    var latRegex = /^(([-])(\d)+((\.)(\d{2})(\d+)))$/;
+                    var lngRegex = /^(([-])(\d)+((\.)(\d{2})(\d+)))$/;
+                    var splits = [',', ':', ' ', '.'];
+
+                    for (var i = 0; i < splits.length; i++) {
+                        var arr = scope.coordenadas.replace(/\s+/g, '').split(splits[i]);
+                        if (arr.length === 2) {
+                            latitud = parseFloat(arr[0].replace(',', '.').match(latRegex));
+                            longitud = parseFloat(arr[1].replace(',', '.').match(lngRegex));
+                        } else if (arr.length === 4) {
+                            latitud = parseFloat((arr[0] + '.' + arr[1]).match(latRegex));
+                            longitud = parseFloat((arr[2] + '.' + arr[3]).match(lngRegex));
+                        }
+                    }
+                    if (!latitud || !longitud //||
+//                        latitud < -31.99 || latitud > -31 ||
+//                        longitud < -61.99 || longitud > -60.3
+                            ) {
+                        scope.model.latitud = '';
+                        scope.model.longitud = '';
+                        scope.error = true;
+                        return;
+                    }
+                    scope.model.latitud = latitud;
+                    scope.model.longitud = longitud;
+                    ngModel.$setViewValue({
+                        latitud: latitud,
+                        longitud: longitud
+                    });
+                    self.point = {
+                        x: longitud,
+                        y: latitud
+                    };
+                    ngModel.$setViewValue(self.point);
+
+                    scope.$emit('msfCoordenadas:change', this);
+                };
+
                 //destruimos los eventos
-                var destroyEvent = scope.$on('$destroy', function() {
+                var destroyEvent = scope.$on('$destroy', function () {
                     destroyEventPointPicker();
                     destroyEvent();
                 });
@@ -830,7 +874,7 @@ angular.module('ap-maps').service('polygonNormalizer', [
   $templateCache.put("directives/mapPolyline/mapPolyline.template.html",
     "<div class=map ng-style=\"{'height':height}\"></div><button type=button class=button ng-click=clear()>Limpiar</button><button type=button class=button ng-click=finish()>Terminar</button>");
   $templateCache.put("directives/pointPicker/pointPicker.template.html",
-    "<div class=row><div class=\"columns small-12 large-6\"><label>Latitud <input type=text ng-value=model.latitud readonly></label></div><div class=\"columns small-12 large-6\"><label>Longitud <input type=text ng-value=model.longitud readonly></label></div><div class=\"columns small-12 large-6\" ng-if=!ocultarBoton><button type=button class=button ng-click=clickBtn()>Ver Punto en Mapa</button></div></div>");
+    "<div class=\"row column\"><div class=\"callout secondary text-center\">Podés obtener los datos de<u><a href=https://www.santafe.gov.ar/idesf/servicios/generador-de-coordenadas/tramite.php target=_blank>acá</a></u></div></div><div class=\"row column\"><label ng-class=\"{'is-invalid-label':error}\"><input style=margin-bottom:3px type=text ng-class=\"{'is-invalid-input':error}\" ng-model=coordenadas ng-change=cambioCoordeandas()><span ng-class=\"{'is-visible':error}\" style=margin-top:7px class=form-error>El campo ingresado contiene errores.</span></label></div><div class=row><div class=\"columns small-12 large-6\"><label>Latitud <input type=text ng-value=model.latitud readonly></label></div><div class=\"columns small-12 large-6\"><label>Longitud <input type=text ng-value=model.longitud readonly></label></div><div class=\"columns small-12 large-6\" ng-if=!ocultarBoton><button type=button class=button ng-click=clickBtn()>Ver Punto en Mapa</button></div></div>");
   $templateCache.put("directives/polygonPicker/polygonPicker.template.html",
     "<div class=row><div class=\"columns small-12 large-6\"><button type=button class=button ng-click=clickBtn()>Ver en Mapa</button></div></div>");
   $templateCache.put("directives/polylinePicker/polylinePicker.template.html",
